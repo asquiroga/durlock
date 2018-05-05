@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CALCULADORA</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" >
+  	<style>
+  		.my-striped tr:nth-child(odd) td {
+  			background: #E9E9E9;
+  		}
+  	</style>
+  </meta>
+
+  <body>
+  <div class="container-fluid" style="padding: 0">
+      <div class="col-xs-12 text-center">
+        <h2>U.Mu.Pla</h2>
+        <h3>Calculadora de Cieloraso</h3>
+      </div>
+  
+    <div id="durlock-app" class="col-xs-12" style="display: none; margin-bottom: 1em;">
+      <form class="form-inline text-center" v-if="!calculado">
+        <div class="form-group">
+          Largo: <input v-model="largo" class="form-control" ref="largo" :disabled="calculado"//>
+        </div>
+        <div class="form-group">
+          Ancho: <input v-model="ancho" class="form-control" ref="ancho" :disabled="calculado"/>
+        </div>
+      </form>
+      
+      <div style="padding-top: 1em" class="text-center" v-if="!calculado">
+        <input type="button" class="btn" value="Calcular" v-on:click="calculado = true" />  
+      </div>    
+
+
+		<procesar :a="ancho | toJsNum" :b="largo | toJsNum" v-if="calculado"></procesar>
+     	<div class="col-xs-12 text-center" v-if="calculado" style="margin-top: 1em">
+      		<input type="button" class="btn btn-primary" value="Volver a empezar" @click="restart" />
+      	</div>
+
+    </div>
+
+  </div>
+
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.min.js"> </script>
+    <script src="http://code.jquery.com/jquery-3.0.0.min.js"> </script>
+
+	<script type="text/x-template" id="procesar-template">
+	  <div class="col-xs-12 col-md-6 col-md-offset-3 text-center" style="background: #F8F8FF; padding: 5px;">
+	  		<table class="table table-bordered">
+	  			<tr>
+	  				<td style="font-weight: bold">Ancho</td> <td class="text-left">{{menor | pretty}} metros</td>
+	  			</tr>
+	  			<tr style="margin-bottom: 1em">
+	  				<td style="font-weight: bold">Largo</td> <td class="text-left">{{mayor | pretty}} metros</td>
+	  			</tr>
+	  		
+	  		</table>
+	  		<table class="table table-bordered my-striped">
+	  			<tr>
+	  				<td>Perimetro</td> 
+	  				<td class="text-left">{{p | pretty}} metros lineales</td>
+	  			</tr>
+	  			<tr>
+	  				<td>Superficie</td><td class="text-left">{{sup | pretty}} m<sup>2</sup></td>
+	  			</tr>
+	  			<tr>
+	  				<td>Placas <i>(de 1,20 x 2,40)</i> </td><td class="text-left">{{placas}} </td>
+	  			</tr>
+	  			<tr>
+	  				<td>Vigas maestras</td><td class="text-left">{{vigas}} <i>(van cada {{vigas_distancia | pretty}} metros)</i></td>
+	  			</tr>
+	  			<tr>
+	  				<td>Soleras (perimetro)</td><td class="text-left">{{soleras_perimetro}}</td>
+	  			</tr>
+	  			<tr>
+	  				<td>Montantes</td><td class="text-left">{{montantes}} <i>(cada 40cm)</i></td>
+	  			</tr>
+	  			<tr>
+	  				<td style="font-weight: bold">Montantes totales</td><td class="text-left">{{montantes_totales}} <i>({{desp}}% de desperdicio)</i></td>
+	  			</tr>
+	  			<tr>
+	  				<td>Masilla</td><td class="text-left">{{masilla}} kg</td>
+	  			</tr>
+	  			<tr>
+	  				<td>Tornillos</td><td class="text-left">{{t2}} T2</td>
+	  			</tr>
+	  			<tr>
+	  				<td>Importante!</td><td class="text-left">Falta calcular las velas (colgantes para las vigas maestras)</td>
+	  			</tr>
+	  		</table>
+
+
+	  </div>
+	</script>
+
+    <script>
+    	Vue.filter('pretty', function (x) {
+	        if (x % 1 != 0)
+	          x = x.toFixed(2);
+	        x = x.toString().replace(/\./g, ",");
+	        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+		});
+
+    	Vue.filter('toJsNum', function (x) {
+    		return x.replace(/\,/g, ".");
+		});
+
+
+
+      Vue.component('procesar', {
+      	data: function() { return {
+      		menor: null, mayor: null//, desp: null
+      	}},
+      	props: ["a", "b"],
+      	template: "#procesar-template",
+      	created: function() {this._swap()},
+      	methods: {
+      		_swap: function() {
+            	var newA = parseFloat(this.a); var newB = parseFloat(this.b);
+            	this.mayor = newA > newB ? newA : newB;
+            	this.menor = newA < newB ? newA : newB;
+      		 }
+      	},
+      	computed: {
+      		p: function() { return (this.a * 2) + (this.b*2); },
+      		sup: function() { return this.a * this.b; },
+      		vigas: function() { return Math.ceil(this.menor / 1.5) - 1; },
+      		vigas_distancia: function() { return (this.menor / (this.vigas+1) ); },
+      		montantes: function() { return Math.ceil(this.mayor / 0.4); },
+      		montantes_totales: function() { 
+      			var ex = this.menor / 2.60;
+      			var c = Math.ceil(ex);
+      			this.desp = Math.floor( (c - ex) * 100 / ex);
+      			return c * this.montantes;
+      		},
+      		soleras_perimetro: function() { return Math.ceil(this.p / 2.66); },
+      		masilla: function() { return Math.ceil(this.sup); },
+      		placas: function() { return Math.ceil(this.sup / 2.88); },
+      		t2: function() { return this.placas * 45; }
+      	},
+      	watch: {
+      		a: function() { this._swap() },
+      		b: function() { this._swap() }
+      	}
+      });
+
+      new Vue({
+        el: "#durlock-app",
+        data: {
+            largo: null, 
+            ancho: null, 
+            calculado: false
+                },
+        mounted: function() { $("#durlock-app").show() },
+        methods: {
+        	restart: function() {
+        		window.location.reload();
+        	},
+        }
+      });
+    </script>
+
+  </body>
+</html>
